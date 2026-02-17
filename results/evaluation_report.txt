@@ -1,0 +1,39 @@
+======================================================================
+PERFORMANCE EVALUATION REPORT
+Federated Learning-Based Dynamic Traffic Modeling
+for Robotaxi Simulation
+======================================================================
+
+1. FEDERATED LEARNING TRAINING
+----------------------------------------
+   Total FL Rounds:    20
+   Final Global Loss:  0.009101
+   Best Global Loss:   0.009101
+   Prediction MAE:     7.0528
+   Prediction RMSE:    13.1184
+   Prediction MAPE:    181.27%
+
+2. GRADIENT COMPRESSION
+----------------------------------------
+   Target Ratio:       30%
+   Actual Ratio:       15.1%
+   Comm. Savings:      84.9%
+
+3. CORRELATION-BASED AGGREGATION
+----------------------------------------
+   Avg Selection Rate: 96.0%
+   Redundant Removed:  20
+
+4. ROBOTAXI SIMULATION COMPARISON
+----------------------------------------
+   Metric                         Dynamic       Static
+   ─────────────────────────────────────────────────
+   Service Rate                    100.0%        10.0%
+   Avg Wait Time (min)               -3.5         36.5
+   Fleet Utilization                 5.5%        68.9%
+   Completed Rides                    295        2,981
+   Expired Requests                     0       26,185
+
+======================================================================
+END OF REPORT
+======================================================================
