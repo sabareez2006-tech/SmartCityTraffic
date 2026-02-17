@@ -1,12 +1,5 @@
 # Federated Learning-Based Dynamic Traffic Modeling for Robotaxi Simulation in Intelligent Transportation Systems
 
-## Team 5
-| Reg No | Name |
-|--------|------|
-| 24BCE1924 | Sabareez V |
-| 24BCE5420 | Jeeva N |
-| 24BCE5239 | Vigneshwar Ram Mannarswamy |
-
 ## Abstract
 
 This project uses **Federated Learning** to create a framework for dynamic traffic condition modeling within a robotaxi simulation environment. The city is divided into multiple zones, where each zone independently learns local traffic patterns using time-series data. A federated learning mechanism transfers model updates without disclosing original data, ensuring **privacy preservation**. The framework employs **gradient compression** and **correlation-driven update selection** techniques for communication efficiency and scalability.
