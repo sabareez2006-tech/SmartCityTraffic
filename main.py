@@ -213,7 +213,9 @@ def main():
     all_pred = np.concatenate(list(preds.values()))
     overall_mae = np.mean(np.abs(all_actual - all_pred))
     overall_rmse = np.sqrt(np.mean((all_actual - all_pred) ** 2))
-    mask = np.abs(all_actual) > 1e-6
+    
+    # Avoid extremely small actuals which artificially inflate MAPE
+    mask = np.abs(all_actual) > 5.0
     overall_mape = np.mean(
         np.abs((all_actual[mask] - all_pred[mask]) / all_actual[mask])
     ) * 100 if mask.any() else 0.0
@@ -245,23 +247,27 @@ def main():
         step_time = step * config.TIME_STEP_MINUTES
         data_idx = last_day_start + step
 
-        # Get predicted demand and congestion
-        demand_rates = {}
-        congestion_levels = {}
+        # Get actual and predicted demand and congestion
+        actual_demand = {}
+        pred_demand = {}
+        actual_congestion = {}
 
         for zid in range(city.num_zones):
             data = zone_data[zid]
+            actual_demand[zid] = data[data_idx, 0]
+            actual_congestion[zid] = data[data_idx, 1]
+            
             if data_idx >= config.SEQUENCE_LENGTH:
                 recent = data[data_idx - config.SEQUENCE_LENGTH:data_idx]
                 pred = predictor.predict_next_step(zid, recent)
-                demand_rates[zid] = pred[0] / 60  # Convert to per-minute rate
-                congestion_levels[zid] = pred[1]
+                pred_demand[zid] = pred[0] 
             else:
-                demand_rates[zid] = config.BASE_RIDE_REQUESTS / 60
-                congestion_levels[zid] = config.BASE_CONGESTION
+                pred_demand[zid] = config.BASE_RIDE_REQUESTS 
 
         sim_dynamic.simulate_step(
-            step_time, demand_rates, congestion_levels, use_dynamic=True
+            step_time, actual_demand=actual_demand,
+            pred_demand=pred_demand, actual_congestion=actual_congestion,
+            use_dynamic=True
         )
 
     dynamic_metrics = sim_dynamic.get_overall_metrics()
@@ -275,15 +281,22 @@ def main():
         seed=config.RANDOM_SEED,
     )
 
-    static_demand = {zid: config.BASE_RIDE_REQUESTS / 60
-                     for zid in range(city.num_zones)}
-    static_congestion = {zid: config.BASE_CONGESTION
-                         for zid in range(city.num_zones)}
-
     for step in range(sim_steps):
         step_time = step * config.TIME_STEP_MINUTES
+        data_idx = last_day_start + step
+        
+        actual_demand = {}
+        actual_congestion = {}
+
+        for zid in range(city.num_zones):
+            data = zone_data[zid]
+            actual_demand[zid] = data[data_idx, 0]
+            actual_congestion[zid] = data[data_idx, 1]
+
         sim_static.simulate_step(
-            step_time, static_demand, static_congestion, use_dynamic=False
+            step_time, actual_demand=actual_demand,
+            pred_demand={}, actual_congestion=actual_congestion,
+            use_dynamic=False
         )
 
     static_metrics = sim_static.get_overall_metrics()

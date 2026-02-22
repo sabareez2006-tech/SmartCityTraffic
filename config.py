@@ -78,9 +78,9 @@ MIN_SELECTED_CLIENTS = 3             # Minimum clients to aggregate
 # Robotaxi Simulation Configuration
 # ─────────────────────────────────────────────
 NUM_ROBOTAXIS = 100                   # Total fleet size
-ROBOTAXI_SPEED_KMH = 40              # Average speed in km/h
+ROBOTAXI_SPEED_KMH = 30              # Average speed in km/h
 ROBOTAXI_CAPACITY = 4                # Passengers per vehicle
-MAX_WAIT_TIME_MINUTES = 15           # Maximum acceptable wait time
+MAX_WAIT_TIME_MINUTES = 7            # Maximum acceptable wait time
 PICKUP_TIME_MINUTES = 2              # Time for passenger pickup
 DROPOFF_TIME_MINUTES = 1             # Time for passenger dropoff
 

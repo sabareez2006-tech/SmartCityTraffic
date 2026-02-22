@@ -35,7 +35,7 @@ class Robotaxi:
     """Represents a single robotaxi vehicle."""
     vehicle_id: int
     current_zone: int
-    status: str = "idle"          # idle, en_route_pickup, serving, relocating
+    status: str = "idle"          # idle, en_route, serving, relocating
     current_ride: Optional[int] = None
     available_at: float = 0.0     # Time when vehicle becomes available
     total_rides: int = 0
@@ -45,8 +45,7 @@ class Robotaxi:
 class RobotaxiSimulationModule:
     """
     Simulates a fleet of robotaxis operating under dynamic traffic
-    conditions. Traffic predictions drive demand arrival rates and
-    congestion-dependent travel times.
+    conditions. Traffic predictions drive proactive repositioning.
     """
 
     def __init__(self, num_zones: int, zone_distances: np.ndarray,
@@ -77,6 +76,7 @@ class RobotaxiSimulationModule:
 
     def _initialize_fleet(self):
         """Distribute robotaxis across zones."""
+        self.fleet = []
         vehicles_per_zone = config.NUM_ROBOTAXIS // self.num_zones
         extra = config.NUM_ROBOTAXIS % self.num_zones
 
@@ -90,93 +90,86 @@ class RobotaxiSimulationModule:
                 vid += 1
 
     def simulate_step(self, step_time: float,
-                      demand_rates: Dict[int, float],
-                      congestion_levels: Dict[int, float],
+                      actual_demand: Dict[int, float],
+                      pred_demand: Dict[int, float],
+                      actual_congestion: Dict[int, float],
                       use_dynamic: bool = True) -> Dict:
         """
         Simulate one time step of robotaxi operations.
 
         Args:
             step_time:        Current simulation time (minutes).
-            demand_rates:     Predicted ride demand per zone.
-            congestion_levels: Predicted congestion per zone.
-            use_dynamic:      If True, use predicted dynamic conditions;
-                              if False, use static baseline.
-
-        Returns:
-            Dictionary of step metrics.
+            actual_demand:    Actual ride demand per zone.
+            pred_demand:      Predicted ride demand per zone.
+            actual_congestion: Actual congestion levels per zone.
+            use_dynamic:      If True, use proactive dynamic repositioning.
         """
         self.current_time = step_time
-        step_duration = config.TIME_STEP_MINUTES
 
-        # ── 1. Generate ride requests based on demand ──
-        new_requests = self._generate_requests(demand_rates, use_dynamic)
+        # ── 1. Update vehicle states ──
+        self._update_vehicles()
 
-        # ── 2. Dispatch available vehicles to pending requests ──
-        dispatched = self._dispatch_vehicles(congestion_levels)
+        # ── 2. Generate ride requests based on ACTUAL demand ──
+        new_requests = self._generate_requests(actual_demand)
 
-        # ── 3. Update vehicle states ──
-        completed = self._update_vehicles(congestion_levels)
+        # ── 3. Dispatch available vehicles to pending requests ──
+        dispatched = self._dispatch_vehicles(actual_congestion)
 
-        # ── 4. Expire old requests ──
+        # ── 4. Proactive Repositioning (Dynamic Only) ──
+        if use_dynamic:
+            self._reposition_idle_vehicles(pred_demand, actual_congestion)
+
+        # ── 5. Expire old requests ──
         expired = self._expire_requests()
 
-        # ── 5. Compute metrics ──
-        idle_vehicles = sum(
-            1 for v in self.fleet if v.status == "idle"
-        )
+        # ── 6. Compute metrics ──
+        idle_vehicles = sum(1 for v in self.fleet if v.status == "idle")
         active_vehicles = len(self.fleet) - idle_vehicles
         utilization = active_vehicles / len(self.fleet) if self.fleet else 0
 
-        pending = sum(
-            1 for r in self.ride_requests if r.status == "pending"
-        )
+        pending = sum(1 for r in self.ride_requests if r.status == "pending")
 
         avg_wait = 0.0
-        if completed:
-            wait_times = [r.wait_time for r in completed if r.wait_time]
+        # Compute wait block
+        recent_completed = [r for r in self.completed_rides 
+                            if r.dropoff_time is not None 
+                            and self.current_time - config.TIME_STEP_MINUTES <= r.dropoff_time <= self.current_time]
+        if recent_completed:
+            wait_times = [r.wait_time for r in recent_completed if r.wait_time is not None]
             avg_wait = np.mean(wait_times) if wait_times else 0.0
 
         metrics = {
             "time": step_time,
             "new_requests": len(new_requests),
             "dispatched": dispatched,
-            "completed": len(completed),
+            "completed": len(recent_completed),
             "expired": expired,
             "pending": pending,
             "idle_vehicles": idle_vehicles,
             "fleet_utilization": utilization,
-            "avg_wait_time": avg_wait,
-            "avg_congestion": np.mean(list(congestion_levels.values())),
+            "avg_wait_time": float(avg_wait),
+            "avg_congestion": float(np.mean(list(actual_congestion.values()) if actual_congestion else 0)),
         }
         self.step_metrics.append(metrics)
         return metrics
 
-    def _generate_requests(self, demand_rates: Dict[int, float],
-                           use_dynamic: bool) -> List[RideRequest]:
-        """Generate ride requests based on demand rates."""
+    def _generate_requests(self, actual_demand: Dict[int, float]) -> List[RideRequest]:
+        """Generate ride requests based on actual demand rates to ensure identical worlds."""
         new_requests = []
+        robotaxi_market_share = 0.05  # Scale demand to realistic robotaxi fleet size
         for zone_id in range(self.num_zones):
-            if use_dynamic:
-                rate = demand_rates.get(zone_id, config.BASE_RIDE_REQUESTS)
-            else:
-                rate = config.BASE_RIDE_REQUESTS
+            rate = actual_demand.get(zone_id, config.BASE_RIDE_REQUESTS)
 
-            # Poisson arrivals scaled to time step
-            num_requests = self.rng.poisson(
-                max(0, rate * config.TIME_STEP_MINUTES / 60)
-            )
+            # Poisson arrivals
+            num_requests = self.rng.poisson(max(0, rate * robotaxi_market_share))
 
             for _ in range(num_requests):
-                # Random destination (biased toward adjacent zones)
                 dest = self._choose_destination(zone_id)
                 request = RideRequest(
                     request_id=self.request_counter,
                     origin_zone=zone_id,
                     destination_zone=dest,
-                    request_time=self.current_time + self.rng.uniform(
-                        0, config.TIME_STEP_MINUTES
-                    ),
+                    request_time=self.current_time + self.rng.uniform(0, config.TIME_STEP_MINUTES)
                 )
                 self.ride_requests.append(request)
                 new_requests.append(request)
@@ -188,95 +181,103 @@ class RobotaxiSimulationModule:
         """Choose a destination zone with distance-based probability."""
         distances = self.zone_distances[origin].copy()
         distances[origin] = np.inf  # No self-trips
-        # Inverse distance weighting
         weights = 1.0 / (distances + 0.1)
         weights /= weights.sum()
         return self.rng.choice(self.num_zones, p=weights)
 
-    def _dispatch_vehicles(self, congestion: Dict[int, float]) -> int:
-        """Dispatch idle vehicles to pending requests (nearest first)."""
+    def _dispatch_vehicles(self, actual_congestion: Dict[int, float]) -> int:
+        """Dispatch idle vehicles to pending requests."""
         dispatched = 0
         pending = [r for r in self.ride_requests if r.status == "pending"]
-        idle = [v for v in self.fleet
-                if v.status == "idle" and v.available_at <= self.current_time]
+        idle = [v for v in self.fleet if v.status == "idle" and v.available_at <= self.current_time]
 
         for request in sorted(pending, key=lambda r: r.request_time):
             if not idle:
                 break
 
             # Find nearest idle vehicle
-            best_vehicle = None
-            best_dist = float("inf")
-            for vehicle in idle:
-                dist = self.zone_distances[
-                    vehicle.current_zone, request.origin_zone
-                ]
-                if dist < best_dist:
-                    best_dist = dist
-                    best_vehicle = vehicle
+            best_vehicle = min(idle, key=lambda v: self.zone_distances[v.current_zone, request.origin_zone])
+            best_dist = self.zone_distances[best_vehicle.current_zone, request.origin_zone]
 
-            if best_vehicle is not None:
-                # Compute travel time with congestion
-                cong = congestion.get(request.origin_zone, 0.3)
-                speed = config.ROBOTAXI_SPEED_KMH * (1 - 0.5 * cong)
-                travel_minutes = (best_dist / max(speed, 5)) * 60
+            # Physical travel limits
+            cong = actual_congestion.get(request.origin_zone, 0.3)
+            speed = config.ROBOTAXI_SPEED_KMH * (1 - 0.5 * cong)
+            travel_minutes = (best_dist / max(speed, 5)) * 60
 
-                pickup_time = self.current_time + travel_minutes + \
-                              config.PICKUP_TIME_MINUTES
+            # Fix Negative Wait Time: vehicle cannot start moving before the request is made or it is available
+            start_time = max(request.request_time, self.current_time, best_vehicle.available_at)
+            pickup_time = start_time + travel_minutes + config.PICKUP_TIME_MINUTES
+            
+            wait_time = pickup_time - request.request_time
+            if wait_time > config.MAX_WAIT_TIME_MINUTES:
+                # All remaining idle vehicles are equal distance or further, so no one can reach in time
+                # Leave request pending. It will eventually expire.
+                pass # Wait, we must check if OTHER vehicles are closer? 
+                # We used `min(idle, key=distance)`. So NO other idle vehicle is closer!
+                # We just leave this request pending for now and skip to the next request!
+                continue
 
-                request.status = "assigned"
-                request.pickup_time = pickup_time
-                request.wait_time = pickup_time - request.request_time
+            request.status = "assigned"
+            request.pickup_time = pickup_time
+            request.wait_time = wait_time
 
-                # Compute ride travel time
-                ride_dist = self.zone_distances[
-                    request.origin_zone, request.destination_zone
-                ]
-                dest_cong = congestion.get(request.destination_zone, 0.3)
-                avg_cong = (cong + dest_cong) / 2
-                ride_speed = config.ROBOTAXI_SPEED_KMH * (1 - 0.5 * avg_cong)
-                ride_time = (ride_dist / max(ride_speed, 5)) * 60
+            ride_dist = self.zone_distances[request.origin_zone, request.destination_zone]
+            dest_cong = actual_congestion.get(request.destination_zone, 0.3)
+            avg_cong = (cong + dest_cong) / 2
+            ride_speed = config.ROBOTAXI_SPEED_KMH * (1 - 0.5 * avg_cong)
+            ride_time = (ride_dist / max(ride_speed, 5)) * 60
 
-                request.travel_time = ride_time
-                request.dropoff_time = pickup_time + ride_time + \
-                                       config.DROPOFF_TIME_MINUTES
+            request.travel_time = ride_time
+            request.dropoff_time = pickup_time + ride_time + config.DROPOFF_TIME_MINUTES
 
-                best_vehicle.status = "serving"
-                best_vehicle.current_ride = request.request_id
-                best_vehicle.available_at = request.dropoff_time
+            best_vehicle.status = "serving"
+            best_vehicle.current_ride = request.request_id
+            best_vehicle.available_at = request.dropoff_time
 
-                idle.remove(best_vehicle)
-                dispatched += 1
+            idle.remove(best_vehicle)
+            dispatched += 1
 
         return dispatched
 
-    def _update_vehicles(self, congestion: Dict[int, float]) \
-            -> List[RideRequest]:
+    def _reposition_idle_vehicles(self, pred_demand: Dict[int, float], actual_congestion: Dict[int, float]):
+        """Proactively move idle vehicles to high demand zones."""
+        idle = [v for v in self.fleet if v.status == "idle" and v.available_at <= self.current_time]
+        if not idle:
+            return
+
+        # Rank zones by predicted demand, select top 5
+        heavy_zones = sorted(pred_demand.keys(), key=lambda z: pred_demand.get(z, 0), reverse=True)[:5]
+
+        for vehicle in idle:
+            if vehicle.current_zone not in heavy_zones:
+                target = self.rng.choice(heavy_zones)
+                dist = self.zone_distances[vehicle.current_zone, target]
+                
+                if dist > 1.0: # Minimum distance to relocate
+                    cong = actual_congestion.get(vehicle.current_zone, 0.3)
+                    speed = config.ROBOTAXI_SPEED_KMH * (1 - 0.5 * cong)
+                    travel_minutes = (dist / max(speed, 5)) * 60
+                    
+                    vehicle.status = "relocating"
+                    vehicle.available_at = self.current_time + travel_minutes
+                    vehicle.current_zone = target
+
+    def _update_vehicles(self):
         """Update vehicle states and complete rides."""
-        completed = []
         for vehicle in self.fleet:
-            if vehicle.status == "serving" and \
-                    vehicle.available_at <= self.current_time:
-                # Complete the ride
-                ride = next(
-                    (r for r in self.ride_requests
-                     if r.request_id == vehicle.current_ride),
-                    None
-                )
+            if vehicle.status == "serving" and vehicle.available_at <= self.current_time:
+                ride = next((r for r in self.ride_requests if r.request_id == vehicle.current_ride), None)
                 if ride:
                     ride.status = "completed"
-                    completed.append(ride)
                     self.completed_rides.append(ride)
+                    vehicle.current_zone = ride.destination_zone
 
                 vehicle.status = "idle"
                 vehicle.current_ride = None
                 vehicle.total_rides += 1
 
-                # Move vehicle to destination zone
-                if ride:
-                    vehicle.current_zone = ride.destination_zone
-
-        return completed
+            elif vehicle.status == "relocating" and vehicle.available_at <= self.current_time:
+                vehicle.status = "idle"
 
     def _expire_requests(self) -> int:
         """Expire requests that waited too long."""
@@ -299,10 +300,8 @@ class RobotaxiSimulationModule:
         avg_wait = 0.0
         avg_travel = 0.0
         if self.completed_rides:
-            waits = [r.wait_time for r in self.completed_rides
-                     if r.wait_time is not None]
-            travels = [r.travel_time for r in self.completed_rides
-                       if r.travel_time is not None]
+            waits = [r.wait_time for r in self.completed_rides if r.wait_time is not None]
+            travels = [r.travel_time for r in self.completed_rides if r.travel_time is not None]
             avg_wait = np.mean(waits) if waits else 0.0
             avg_travel = np.mean(travels) if travels else 0.0
 
@@ -310,22 +309,19 @@ class RobotaxiSimulationModule:
 
         avg_utilization = 0.0
         if self.step_metrics:
-            avg_utilization = np.mean(
-                [m["fleet_utilization"] for m in self.step_metrics]
-            )
+            avg_utilization = np.mean([m["fleet_utilization"] for m in self.step_metrics])
 
-        avg_rides_per_vehicle = total_completed / len(self.fleet) \
-            if self.fleet else 0
+        avg_rides_per_vehicle = total_completed / len(self.fleet) if self.fleet else 0
 
         return {
             "total_requests": total_requests,
             "total_completed": total_completed,
             "total_expired": total_expired,
             "service_rate": service_rate,
-            "avg_wait_time": avg_wait,
-            "avg_travel_time": avg_travel,
-            "avg_fleet_utilization": avg_utilization,
-            "avg_rides_per_vehicle": avg_rides_per_vehicle,
+            "avg_wait_time": float(avg_wait),
+            "avg_travel_time": float(avg_travel),
+            "avg_fleet_utilization": float(avg_utilization),
+            "avg_rides_per_vehicle": float(avg_rides_per_vehicle),
         }
 
     def reset(self):
