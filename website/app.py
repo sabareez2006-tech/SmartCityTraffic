@@ -190,8 +190,8 @@ def run_simulation():
 
             # Robotaxi
             cfg.NUM_ROBOTAXIS = params.get('num_taxis', 100)
-            cfg.ROBOTAXI_SPEED_KMH = params.get('taxi_speed', 40)
-            cfg.MAX_WAIT_TIME_MINUTES = params.get('max_wait', 15)
+            cfg.ROBOTAXI_SPEED_KMH = params.get('taxi_speed', 30)
+            cfg.MAX_WAIT_TIME_MINUTES = params.get('max_wait', 7)
 
             # Seed
             cfg.RANDOM_SEED = params.get('random_seed', 42)
@@ -226,8 +226,8 @@ def run_simulation():
             cfg.CORRELATION_THRESHOLD = params.get('corr_threshold', 0.85)
             cfg.MIN_SELECTED_CLIENTS = params.get('min_clients', 3)
             cfg.NUM_ROBOTAXIS = params.get('num_taxis', 100)
-            cfg.ROBOTAXI_SPEED_KMH = params.get('taxi_speed', 40)
-            cfg.MAX_WAIT_TIME_MINUTES = params.get('max_wait', 15)
+            cfg.ROBOTAXI_SPEED_KMH = params.get('taxi_speed', 30)
+            cfg.MAX_WAIT_TIME_MINUTES = params.get('max_wait', 7)
             cfg.RANDOM_SEED = params.get('random_seed', 42)
 
             import copy
@@ -390,19 +390,26 @@ def run_simulation():
             for step in range(sim_steps):
                 step_time = step * cfg.TIME_STEP_MINUTES
                 data_idx = last_day_start + step
-                demand_rates = {}
-                congestion_levels = {}
+                actual_demand = {}
+                pred_demand = {}
+                actual_congestion = {}
                 for zid in range(city.num_zones):
                     data = zone_data[zid]
+                    actual_demand[zid] = data[data_idx, 0]
+                    actual_congestion[zid] = data[data_idx, 1]
+                    
                     if data_idx >= cfg.SEQUENCE_LENGTH:
                         recent = data[data_idx - cfg.SEQUENCE_LENGTH:data_idx]
                         pred = predictor.predict_next_step(zid, recent)
-                        demand_rates[zid] = pred[0] / 60
-                        congestion_levels[zid] = pred[1]
+                        pred_demand[zid] = pred[0]
                     else:
-                        demand_rates[zid] = cfg.BASE_RIDE_REQUESTS / 60
-                        congestion_levels[zid] = cfg.BASE_CONGESTION
-                sim_dynamic.simulate_step(step_time, demand_rates, congestion_levels, use_dynamic=True)
+                        pred_demand[zid] = cfg.BASE_RIDE_REQUESTS
+                        
+                sim_dynamic.simulate_step(
+                    step_time, actual_demand=actual_demand,
+                    pred_demand=pred_demand, actual_congestion=actual_congestion,
+                    use_dynamic=True
+                )
 
             dynamic_metrics = sim_dynamic.get_overall_metrics()
             yield sse_msg('log', 'Dynamic simulation complete', level='success')
@@ -413,12 +420,23 @@ def run_simulation():
                 num_zones=city.num_zones, zone_distances=zone_distances,
                 seed=cfg.RANDOM_SEED
             )
-            static_demand = {zid: cfg.BASE_RIDE_REQUESTS / 60 for zid in range(city.num_zones)}
-            static_congestion = {zid: cfg.BASE_CONGESTION for zid in range(city.num_zones)}
-
             for step in range(sim_steps):
                 step_time = step * cfg.TIME_STEP_MINUTES
-                sim_static.simulate_step(step_time, static_demand, static_congestion, use_dynamic=False)
+                data_idx = last_day_start + step
+                
+                actual_demand = {}
+                actual_congestion = {}
+                
+                for zid in range(city.num_zones):
+                    data = zone_data[zid]
+                    actual_demand[zid] = data[data_idx, 0]
+                    actual_congestion[zid] = data[data_idx, 1]
+
+                sim_static.simulate_step(
+                    step_time, actual_demand=actual_demand,
+                    pred_demand={}, actual_congestion=actual_congestion,
+                    use_dynamic=False
+                )
 
             static_metrics = sim_static.get_overall_metrics()
             yield sse_msg('log', 'Static simulation complete', level='success')

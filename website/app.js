@@ -24,7 +24,7 @@ const DEFAULT_CONFIG = {
     hiddenSize: 64, numLayers: 2,
     compressionRatio: 0.3, compressionThreshold: 0.01,
     corrThreshold: 0.85, minClients: 3,
-    numTaxis: 100, taxiSpeed: 40, maxWait: 15, randomSeed: 42
+    numTaxis: 100, taxiSpeed: 30, maxWait: 7, randomSeed: 42
 };
 
 let isRunning = false;
@@ -223,8 +223,8 @@ function getConfig() {
         corr_threshold: parseFloat($('corr-threshold')?.value) || 0.85,
         min_clients: parseInt($('min-clients')?.value) || 3,
         num_taxis: parseInt($('num-taxis')?.value) || 100,
-        taxi_speed: parseInt($('taxi-speed')?.value) || 40,
-        max_wait: parseInt($('max-wait')?.value) || 15,
+        taxi_speed: parseInt($('taxi-speed')?.value) || 30,
+        max_wait: parseInt($('max-wait')?.value) || 7,
         random_seed: parseInt($('random-seed')?.value) || 42
     };
 }
