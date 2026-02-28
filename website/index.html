@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City Traffic Modeling — FL-Based Robotaxi Simulation</title>
+    <meta name="description"
+        content="Interactive dashboard for Federated Learning-Based Dynamic Traffic Modeling and Robotaxi Simulation in Intelligent Transportation Systems.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-brand">
+            <div class="logo-icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="url(#grad1)" stroke-width="2.5" />
+                    <path d="M12 20L18 14L24 20L18 26Z" fill="url(#grad1)" opacity="0.6" />
+                    <path d="M20 10V30M10 20H30" stroke="url(#grad1)" stroke-width="1.5" opacity="0.4" />
+                    <defs>
+                        <linearGradient id="grad1" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#6366f1" />
+                            <stop offset="100%" stop-color="#06b6d4" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="brand-text">SmartCity<span class="accent">Traffic</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="#hero" class="nav-link active" data-section="hero">Home</a>
+            <a href="#configure" class="nav-link" data-section="configure">Configure</a>
+            <a href="#results" class="nav-link" data-section="results">Results</a>
+            <a href="#visualizations" class="nav-link" data-section="visualizations">Visualizations</a>
+            <a href="#about" class="nav-link" data-section="about">About</a>
+        </div>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                Federated Learning Powered
+            </div>
+            <h1 class="hero-title">
+                Dynamic Traffic Modeling<br>
+                <span class="gradient-text">for Robotaxi Simulation</span>
+            </h1>
+            <p class="hero-subtitle">
+                Configure and run federated learning simulations for intelligent transportation systems.
+                Adjust parameters, visualize traffic patterns, and compare dynamic vs. static dispatching strategies.
+            </p>
+            <div class="hero-actions">
+                <a href="#configure" class="btn btn-primary" id="get-started-btn">
+                    <span>Get Started</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+                <a href="#about" class="btn btn-ghost" id="learn-more-btn">Learn More</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-zones">25</span>
+                    <span class="stat-label">City Zones</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-fleet">100</span>
+                    <span class="stat-label">Robotaxis</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-rounds">20</span>
+                    <span class="stat-label">FL Rounds</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-savings">85%</span>
+                    <span class="stat-label">Comm. Savings</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="grid-visualization" id="city-grid-viz">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Configuration Section -->
+    <section id="configure" class="section">
+        <div class="section-header">
+            <span class="section-tag">Configuration</span>
+            <h2 class="section-title">Simulation Parameters</h2>
+            <p class="section-desc">Fine-tune every aspect of the federated learning pipeline and robotaxi simulation.
+            </p>
+        </div>
+
+        <div class="config-container">
+            <!-- City Zoning -->
+            <div class="config-card" id="config-city">
+                <div class="card-header">
+                    <div class="card-icon city-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" rx="1" />
+                            <rect x="14" y="3" width="7" height="7" rx="1" />
+                            <rect x="3" y="14" width="7" height="7" rx="1" />
+                            <rect x="14" y="14" width="7" height="7" rx="1" />
+                        </svg>
+                    </div>
+                    <h3>City Zoning</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="grid-rows">Grid Rows</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="grid-rows" value="5" min="2" max="10" step="1">
+                            <span class="input-unit">rows</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="grid-cols">Grid Columns</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="grid-cols" value="5" min="2" max="10" step="1">
+                            <span class="input-unit">cols</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="city-area">City Area</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="city-area" value="20" min="5" max="100" step="5">
+                            <span class="input-unit">km²</span>
+                        </div>
+                    </div>
+                    <div class="zone-count-display">
+                        <span class="zone-label">Total Zones:</span>
+                        <span class="zone-value" id="total-zones">25</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traffic Data -->
+            <div class="config-card" id="config-traffic">
+                <div class="card-header">
+                    <div class="card-icon traffic-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12H18L15 21L9 3L6 12H2" />
+                        </svg>
+                    </div>
+                    <h3>Traffic Data</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="sim-hours">Simulation Hours</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="sim-hours" value="24" min="1" max="72" step="1">
+                            <span class="input-unit">hrs</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="time-step">Time Step</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="time-step" value="15" min="5" max="60" step="5">
+                            <span class="input-unit">min</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="num-days">Number of Days</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="num-days" value="7" min="1" max="30" step="1">
+                            <span class="input-unit">days</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="base-requests">Base Ride Requests</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="base-requests" value="50" min="10" max="200" step="10">
+                            <span class="input-unit">/zone</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Federated Learning -->
+            <div class="config-card" id="config-fl">
+                <div class="card-header">
+                    <div class="card-icon fl-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <circle cx="4" cy="4" r="2" />
+                            <circle cx="20" cy="4" r="2" />
+                            <circle cx="4" cy="20" r="2" />
+                            <circle cx="20" cy="20" r="2" />
+                            <line x1="6" y1="6" x2="9" y2="9" />
+                            <line x1="18" y1="6" x2="15" y2="9" />
+                            <line x1="6" y1="18" x2="9" y2="15" />
+                            <line x1="18" y1="18" x2="15" y2="15" />
+                        </svg>
+                    </div>
+                    <h3>Federated Learning</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="fl-rounds">FL Rounds</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="fl-rounds" value="20" min="5" max="100" step="5">
+                            <span class="input-unit">rounds</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="local-epochs">Local Epochs</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="local-epochs" value="3" min="1" max="10" step="1">
+                            <span class="input-unit">epochs</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="learning-rate">Learning Rate</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="learning-rate" value="0.001" min="0.0001" max="0.1" step="0.001">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="batch-size">Batch Size</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="batch-size" value="16" min="4" max="128" step="4">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="hidden-size">Hidden Size</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="hidden-size" value="64" min="16" max="256" step="16">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="num-layers">LSTM Layers</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="num-layers" value="2" min="1" max="4" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gradient Compression -->
+            <div class="config-card" id="config-compression">
+                <div class="card-header">
+                    <div class="card-icon compression-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 14L8 10L12 14L16 8L20 12" />
+                            <line x1="4" y1="20" x2="20" y2="20" />
+                        </svg>
+                    </div>
+                    <h3>Gradient Compression</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="compression-ratio">Compression Ratio</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="compression-ratio" min="0.1" max="1.0" step="0.05" value="0.3">
+                            <span class="slider-value" id="compression-ratio-val">30%</span>
+                        </div>
+                        <span class="input-hint">Keep top X% of gradients</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="compression-threshold">Threshold</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="compression-threshold" value="0.01" min="0.001" max="0.1"
+                                step="0.005">
+                        </div>
+                        <span class="input-hint">Minimum gradient magnitude</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correlation Aggregation -->
+            <div class="config-card" id="config-correlation">
+                <div class="card-header">
+                    <div class="card-icon corr-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="8" cy="8" r="3" />
+                            <circle cx="16" cy="16" r="3" />
+                            <path d="M10 10L14 14" stroke-dasharray="2 2" />
+                            <circle cx="16" cy="8" r="3" />
+                            <path d="M13 8L11 8" stroke-dasharray="2 2" />
+                        </svg>
+                    </div>
+                    <h3>Correlation Aggregation</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="corr-threshold">Correlation Threshold</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="corr-threshold" min="0.5" max="1.0" step="0.05" value="0.85">
+                            <span class="slider-value" id="corr-threshold-val">85%</span>
+                        </div>
+                        <span class="input-hint">Threshold for filtering redundant updates</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="min-clients">Min Selected Clients</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="min-clients" value="3" min="1" max="10" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Robotaxi Fleet -->
+            <div class="config-card" id="config-robotaxi">
+                <div class="card-header">
+                    <div class="card-icon taxi-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="8" rx="2" />
+                            <path d="M5 11V7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V11" />
+                            <circle cx="7" cy="19" r="1.5" fill="currentColor" />
+                            <circle cx="17" cy="19" r="1.5" fill="currentColor" />
+                            <path d="M10 5L8 2H16L14 5" />
+                        </svg>
+                    </div>
+                    <h3>Robotaxi Fleet</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label for="num-taxis">Fleet Size</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="num-taxis" value="100" min="10" max="500" step="10">
+                            <span class="input-unit">vehicles</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="taxi-speed">Average Speed</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="taxi-speed" value="40" min="20" max="80" step="5">
+                            <span class="input-unit">km/h</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="max-wait">Max Wait Time</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="max-wait" value="15" min="5" max="30" step="5">
+                            <span class="input-unit">min</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="random-seed">Random Seed</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="random-seed" value="42" min="1" max="9999" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Run Button -->
+        <div class="run-section">
+            <button id="run-simulation-btn" class="btn btn-run">
+                <svg class="run-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5,3 19,12 5,21" />
+                </svg>
+                <span class="run-text">Run Simulation</span>
+                <div class="run-loader" id="run-loader">
+                    <span></span><span></span><span></span>
+                </div>
+            </button>
+            <button id="reset-btn" class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M1 4V10H7" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                Reset Defaults
+            </button>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="terminal-container" id="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <span class="terminal-title">Simulation Output</span>
+                <button class="terminal-clear" id="clear-terminal" title="Clear output">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terminal-body" id="terminal-output">
+                <div class="terminal-line">
+                    <span class="terminal-prompt">$</span>
+                    <span class="terminal-text typing">Ready to run simulation...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results" class="section">
+        <div class="section-header">
+            <span class="section-tag">Results</span>
+            <h2 class="section-title">Performance Metrics</h2>
+            <p class="section-desc">Key metrics from the last simulation run.</p>
+        </div>
+
+        <div class="results-grid" id="results-grid">
+            <!-- FL Training -->
+            <div class="result-card glass">
+                <div class="result-icon fl-result-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Final Loss</span>
+                    <span class="result-value" id="res-loss">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon mae-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+                        <path d="M2 17L12 22L22 17" />
+                        <path d="M2 12L12 17L22 12" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Prediction MAE</span>
+                    <span class="result-value" id="res-mae">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon rmse-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M8 12H16M12 8V16" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Prediction RMSE</span>
+                    <span class="result-value" id="res-rmse">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon savings-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Comm. Savings</span>
+                    <span class="result-value" id="res-savings">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22,4 12,14.01 9,11.01" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Dynamic Service Rate</span>
+                    <span class="result-value" id="res-service-dyn">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon wait-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Avg Wait (Dynamic)</span>
+                    <span class="result-value" id="res-wait-dyn">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon rides-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Dynamic Rides</span>
+                    <span class="result-value" id="res-rides-dyn">—</span>
+                </div>
+            </div>
+            <div class="result-card glass">
+                <div class="result-icon util-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 20V10M12 20V4M6 20V14" />
+                    </svg>
+                </div>
+                <div class="result-info">
+                    <span class="result-label">Fleet Utilization</span>
+                    <span class="result-value" id="res-util-dyn">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="comparison-container glass" id="comparison-table-container" style="display:none;">
+            <h3 class="comparison-title">Dynamic vs Static Simulation</h3>
+            <table class="comparison-table" id="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th class="dynamic-col">Dynamic (FL)</th>
+                        <th class="static-col">Static</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-tbody">
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Visualizations Section -->
+    <section id="visualizations" class="section">
+        <div class="section-header">
+            <span class="section-tag">Visualizations</span>
+            <h2 class="section-title">Charts & Plots</h2>
+            <p class="section-desc">Visual analysis generated from the simulation results.</p>
+        </div>
+
+        <div class="viz-tabs">
+            <button class="viz-tab active" data-viz="training_loss">Training Loss</button>
+            <button class="viz-tab" data-viz="prediction_accuracy">Prediction Accuracy</button>
+            <button class="viz-tab" data-viz="compression_analysis">Compression</button>
+            <button class="viz-tab" data-viz="correlation_selection">Correlation</button>
+            <button class="viz-tab" data-viz="simulation_comparison">Simulation</button>
+            <button class="viz-tab" data-viz="demand_heatmap">Demand Heatmap</button>
+            <button class="viz-tab" data-viz="congestion_heatmap">Congestion</button>
+            <button class="viz-tab" data-viz="fleet_utilization_timeline">Fleet Util.</button>
+            <button class="viz-tab" data-viz="traffic_evolution">Traffic Evo.</button>
+        </div>
+
+        <div class="viz-display glass" id="viz-display">
+            <div class="viz-placeholder" id="viz-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="64" height="64">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15L16 10L5 21" />
+                </svg>
+                <p>Run a simulation to generate visualizations</p>
+            </div>
+            <img id="viz-image" class="viz-image" alt="Visualization" style="display:none;">
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+        <div class="section-header">
+            <span class="section-tag">About</span>
+            <h2 class="section-title">Project Overview</h2>
+        </div>
+        <div class="about-grid">
+            <div class="about-card glass">
+                <div class="about-number">01</div>
+                <h4>City Zoning</h4>
+                <p>Divides the city into a grid of zones, each with unique traffic characteristics — residential,
+                    commercial, industrial, suburban, and downtown.</p>
+            </div>
+            <div class="about-card glass">
+                <div class="about-number">02</div>
+                <h4>Traffic Data Generation</h4>
+                <p>Generates synthetic traffic data with realistic peak-hour patterns, ride requests, congestion levels,
+                    and traffic flow across all city zones.</p>
+            </div>
+            <div class="about-card glass">
+                <div class="about-number">03</div>
+                <h4>Federated Learning</h4>
+                <p>Trains LSTM models locally at each zone, compresses gradients, selects updates via correlation
+                    analysis, and aggregates using FedAvg.</p>
+            </div>
+            <div class="about-card glass">
+                <div class="about-number">04</div>
+                <h4>Gradient Compression</h4>
+                <p>Applies Top-K sparsification with residual memory to reduce communication overhead by up to 85% while
+                    maintaining model accuracy.</p>
+            </div>
+            <div class="about-card glass">
+                <div class="about-number">05</div>
+                <h4>Traffic Prediction</h4>
+                <p>Uses the trained federated global model to predict ride demand, congestion, and traffic flow for the
+                    next time step in each zone.</p>
+            </div>
+            <div class="about-card glass">
+                <div class="about-number">06</div>
+                <h4>Robotaxi Simulation</h4>
+                <p>Simulates fleet dispatching under dynamic (ML-predicted) and static (baseline) traffic, comparing
+                    service rates, wait times, and utilization.</p>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="brand-text">SmartCity<span class="accent">Traffic</span></span>
+                <p>Federated Learning-Based Dynamic Traffic Modeling for Robotaxi Simulation</p>
+            </div>
+            <div class="footer-links">
+                <a href="#hero">Home</a>
+                <a href="#configure">Configure</a>
+                <a href="#results">Results</a>
+                <a href="#visualizations">Visualizations</a>
+                <a href="#about">About</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Smart City Traffic Modeling — Intelligent Transportation Systems</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="toast-icon" id="toast-icon"></div>
+        <span id="toast-message"></span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

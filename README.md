@@ -41,7 +41,15 @@ Identifies and aggregates only informative and non-redundant model updates from 
 ├── utils/
 │   └── helpers.py                     # Utility functions
 │
-└── results/                           # Generated output plots & report
+├── results/                           # Generated output plots & report
+│
+└── paper/                             # IEEE Journal Paper
+    ├── main.tex                       # LaTeX source
+    ├── references.bib                 # BibTeX references
+    ├── system_architecture.png        # Architecture diagram
+    ├── system_architecture.drawio     # Draw.io source
+    ├── generate_comparative_graphs.py # Graph generation script
+    └── graph01-12_*.pdf               # 12 comparative analysis graphs
 ```
 
 ## Modules
@@ -87,12 +95,17 @@ All output plots and the evaluation report are saved in the `results/` folder:
 
 | Metric | Value |
 |--------|-------|
-| FL Training Loss | 0.009 (converged over 20 rounds) |
+| FL Training Loss | 0.0091 (converged over 20 rounds) |
 | Prediction MAE | 7.05 |
 | Prediction RMSE | 13.12 |
+| Prediction MAPE | 36.94% |
 | Gradient Compression Savings | 84.9% |
-| Dynamic Service Rate | 100% |
-| Static Service Rate (Baseline) | 10% |
+| Dynamic Service Rate | 60.2% |
+| Static Service Rate (Baseline) | 46.6% |
+| Dynamic Fleet Utilization | 56.8% |
+| Static Fleet Utilization | 33.0% |
+| Dynamic Completed Rides | 1,814 |
+| Static Completed Rides | 1,404 |
 
 ## Tech Stack
 - **Python 3.12+**
