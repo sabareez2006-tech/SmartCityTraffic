@@ -392,10 +392,17 @@ function displayResults(data) {
     animateValue('res-mae', fl.mae, 4);
     animateValue('res-rmse', fl.rmse, 4);
     animateValue('res-savings', compression.savings || '—');
-    animateValue('res-service-dyn', dynamic.service_rate ? `${(dynamic.service_rate * 100).toFixed(1)}%` : dynamic.service_rate_display || '—');
+    const getDisplayVal = (dataBlock, key, fmt) => {
+        if (dataBlock[key + '_display']) return dataBlock[key + '_display'];
+        if (dataBlock[key] == null) return '—';
+        if (fmt === 'percent') return `${(dataBlock[key] * 100).toFixed(1)}%`;
+        return dataBlock[key];
+    };
+
+    animateValue('res-service-dyn', getDisplayVal(dynamic, 'service_rate', 'percent'));
+    animateValue('res-util-dyn', getDisplayVal(dynamic, 'fleet_utilization', 'percent'));
     animateValue('res-wait-dyn', dynamic.avg_wait_time != null ? `${dynamic.avg_wait_time.toFixed(1)}min` : '—');
     animateValue('res-rides-dyn', dynamic.total_rides_completed != null ? dynamic.total_rides_completed.toLocaleString() : '—');
-    animateValue('res-util-dyn', dynamic.fleet_utilization ? `${(dynamic.fleet_utilization * 100).toFixed(1)}%` : dynamic.fleet_utilization_display || '—');
 
     // Update comparison table
     buildComparisonTable(dynamic, staticM);
@@ -443,38 +450,82 @@ function buildComparisonTable(dynamic, staticM) {
     ];
 
     metrics.forEach(m => {
-        const dynVal = dynamic[m.dynKey];
-        const statVal = staticM[m.statKey];
-        if (dynVal == null && statVal == null) return;
+        let dRaw = dynamic[m.dynKey] != null ? dynamic[m.dynKey] : dynamic[m.dynKey + '_display'];
+        let sRaw = staticM[m.statKey] != null ? staticM[m.statKey] : staticM[m.statKey + '_display'];
+
+        const dynVal = parseFloat(typeof dRaw === 'string' ? dRaw.replace('%', '') : dRaw);
+        const statVal = parseFloat(typeof sRaw === 'string' ? sRaw.replace('%', '') : sRaw);
+
+        // Ensure values are numbers for diff calculation
+        if (isNaN(dynVal) && isNaN(statVal)) return; // Only skip if both are totally missing
 
         const tr = document.createElement('tr');
 
-        const formatVal = (v, fmt) => {
-            if (v == null) return '—';
-            if (fmt === 'percent') return `${(v * 100).toFixed(1)}%`;
-            if (fmt === 'time') return `${v.toFixed(1)} min`;
-            if (fmt === 'number') return v.toLocaleString();
-            return v;
+        const formatVal = (rawVal, lookupContainer, key, fmt) => {
+            // First check if a pre-formatted display string exists
+            if (lookupContainer[key + '_display']) {
+                return lookupContainer[key + '_display'];
+            }
+            // Otherwise, fallback to raw value
+            if (rawVal == null) return '—';
+
+            if (fmt === 'percent') return `${(rawVal * 100).toFixed(1)}%`;
+            if (fmt === 'time') return `${rawVal.toFixed(1)} min`;
+            if (fmt === 'number') return rawVal.toLocaleString();
+            return rawVal;
         };
+
+        const dynStr = formatVal(dynamic[m.dynKey], dynamic, m.dynKey, m.format);
+        const statStr = formatVal(staticM[m.statKey], staticM, m.statKey, m.format);
 
         let improvement = '';
         let isNeg = false;
-        if (dynVal != null && statVal != null && statVal !== 0) {
-            const diff = ((dynVal - statVal) / Math.abs(statVal) * 100);
-            const sign = diff > 0 ? '+' : '';
-            improvement = `${sign}${diff.toFixed(1)}%`;
-            // For wait time and expired requests, negative is good
-            if (m.label === 'Avg Wait Time' || m.label === 'Expired Requests') {
-                isNeg = diff > 0;
+        if (dynVal !== 0) {
+            let diff;
+            let displayDiff;
+
+            // If the data was parsed from the string format (it's already a whole number like 60.2 representing 60.2%)
+            const isParsedPercent = dynamic[m.dynKey + '_display'] != null;
+
+            if (m.format === 'percent') {
+                if (isParsedPercent) {
+                    // e.g. dynVal = 60.2, statVal = 46.6. We want 60.2 - 46.6
+                    diff = (dynVal - statVal);
+                } else {
+                    // e.g. dynVal = 0.602, statVal = 0.466
+                    diff = (dynVal - statVal) * 100;
+                }
+                displayDiff = diff;
             } else {
-                isNeg = diff < 0;
+                // For raw numbers, compute relative percentage diff
+                // Use single decimal precision to avoid floating point mismatch if rounding to 1 decimal place on UI visually looks the same.
+                const dyn1 = parseFloat(dynVal.toFixed(1));
+                const stat1 = parseFloat(statVal.toFixed(1));
+                if (dyn1 === stat1) {
+                    diff = 0;
+                } else {
+                    diff = ((dynVal - statVal) / Math.abs(statVal)) * 100;
+                }
+                displayDiff = diff;
+            }
+
+            if (Math.abs(displayDiff) < 0.01) displayDiff = 0; // Fix -0.0% issue
+
+            const sign = displayDiff > 0 ? '+' : '';
+            improvement = `${sign}${displayDiff.toFixed(1)}%`;
+
+            // For wait time and expired requests, negative is good (green)
+            if (m.label === 'Avg Wait Time' || m.label === 'Expired Requests') {
+                isNeg = displayDiff > 0;
+            } else {
+                isNeg = displayDiff < 0;
             }
         }
 
         tr.innerHTML = `
             <td>${m.label}</td>
-            <td>${formatVal(dynVal, m.format)}</td>
-            <td>${formatVal(statVal, m.format)}</td>
+            <td>${dynStr}</td>
+            <td>${statStr}</td>
             <td class="${isNeg ? 'negative' : ''}">${improvement}</td>
         `;
         tbody.appendChild(tr);
@@ -517,7 +568,7 @@ function loadExistingPlots() {
     testImg.onerror = () => {
         // Keep placeholder
     };
-    testImg.src = `../results/${currentViz}.png`;
+    testImg.src = `../results/${currentViz}.png?t=${Date.now()}`;
 }
 
 // ============================================
@@ -558,9 +609,9 @@ function loadVisualization(vizName) {
             img.style.display = 'none';
             if (placeholder) placeholder.style.display = 'flex';
         };
-        testImg2.src = `../results/${vizName}.png`;
+        testImg2.src = `../results/${vizName}.png?t=${Date.now()}`;
     };
-    testImg.src = `/api/plot/${vizName}`;
+    testImg.src = `/api/plot/${vizName}?t=${Date.now()}`;
 }
 
 // ============================================
