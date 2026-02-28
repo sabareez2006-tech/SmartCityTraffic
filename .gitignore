@@ -30,12 +30,5 @@ Thumbs.db
 PRESENTATION_GUIDE.md
 Team*.pdf
 
-# Paper - exclude source files, keep graphs and architecture
-paper/main.tex
-paper/references.bib
-paper/system_architecture.drawio
-paper/generate_comparative_graphs.py
-paper/*.png.bak
-
 # Gemini agent data
 .gemini/
