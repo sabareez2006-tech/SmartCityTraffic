@@ -1,6 +1,5 @@
-# Ignore Word/PDF documents
+# Ignore Word documents
 *.docx
-*.pdf
 *.doc
 
 # Python
@@ -29,9 +28,14 @@ Thumbs.db
 
 # Personal / Private files
 PRESENTATION_GUIDE.md
+Team*.pdf
 
-# Paper (LaTeX, reference papers, graphs - not for public repo)
-paper/
+# Paper - exclude source files, keep graphs and architecture
+paper/main.tex
+paper/references.bib
+paper/system_architecture.drawio
+paper/generate_comparative_graphs.py
+paper/*.png.bak
 
 # Gemini agent data
 .gemini/
