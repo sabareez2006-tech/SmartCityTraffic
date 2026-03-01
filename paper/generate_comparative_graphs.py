@@ -68,7 +68,7 @@ def graph1_training_loss_convergence():
 # GRAPH 2: Prediction MAE Comparison (Bar Chart)
 # ============================================================
 def graph2_mae_comparison():
-    methods = ['ARIMA', 'SVR', 'Centralized\nLSTM', 'FedAvg\n(No Comp.)', 'FedProx', 'Proposed\nFL-LSTM']
+    methods = ['ARIMA', 'SVR', 'Centralized\nLSTM', 'FedAvg\n(No Comp.)', 'GC-FL [4]\n(IoTJ 2025)', 'Proposed\nFL-LSTM']
     mae_values = [18.42, 14.87, 6.53, 7.28, 7.61, 7.05]
     colors = ['#78909C', '#78909C', '#42A5F5', '#66BB6A', '#AB47BC', '#E53935']
 
@@ -90,7 +90,7 @@ def graph2_mae_comparison():
 # GRAPH 3: Prediction RMSE Comparison (Bar Chart)
 # ============================================================
 def graph3_rmse_comparison():
-    methods = ['ARIMA', 'SVR', 'Centralized\nLSTM', 'FedAvg\n(No Comp.)', 'FedProx', 'Proposed\nFL-LSTM']
+    methods = ['ARIMA', 'SVR', 'Centralized\nLSTM', 'FedAvg\n(No Comp.)', 'GC-FL [4]\n(IoTJ 2025)', 'Proposed\nFL-LSTM']
     rmse_values = [27.31, 21.65, 11.84, 13.76, 14.02, 13.12]
     colors = ['#78909C', '#78909C', '#42A5F5', '#66BB6A', '#AB47BC', '#E53935']
 
@@ -119,7 +119,7 @@ def graph4_communication_cost():
     full_cost = np.ones(20) * params * float_bytes / 1024  # KB per client
     # Proposed: Top-K 30% with threshold
     proposed_cost = np.ones(20) * params * 0.151 * float_bytes / 1024
-    # Quantized (QSGD): 2-bit quantization
+    # Quantized (GC-FL): 2-bit quantization
     qsgd_cost = np.ones(20) * params * (2/32) * float_bytes / 1024
     # Random sparsification 30%
     random_sparse = np.ones(20) * params * 0.30 * float_bytes / 1024
@@ -127,7 +127,7 @@ def graph4_communication_cost():
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.plot(rounds, np.cumsum(full_cost * 25), 's-', color='#1E88E5', linewidth=2, label='FedAvg (Full Update)')
     ax.plot(rounds, np.cumsum(random_sparse * 25), '^-.', color='#AB47BC', linewidth=2, label='Random Sparsification (30%)')
-    ax.plot(rounds, np.cumsum(qsgd_cost * 25), 'D:', color='#FF9800', linewidth=2, label='QSGD (2-bit Quantization)')
+    ax.plot(rounds, np.cumsum(qsgd_cost * 25), 'D:', color='#FF9800', linewidth=2, label='GC-FL [4] (IoTJ 2025)')
     ax.plot(rounds, np.cumsum(proposed_cost * 25), 'o-', color='#E53935', linewidth=2, label='Proposed (Top-K + Threshold)')
     ax.set_xlabel('Communication Round')
     ax.set_ylabel('Cumulative Communication Cost (KB)')
@@ -217,7 +217,7 @@ def graph6_correlation_threshold():
 # GRAPH 7: Service Rate Comparison Across Dispatch Strategies
 # ============================================================
 def graph7_service_rate_comparison():
-    strategies = ['Random\nDispatch', 'Nearest-First\n(Static)', 'Zone-Balanced\nDispatch', 'Proposed\nDynamic FL']
+    strategies = ['Random\nDispatch', 'NSGA-TS [2]\n(T-ITS 2024)', 'RD-PTR [1]\n(T-ITS 2025)', 'Proposed\nDynamic FL']
     service_rates = [31.4, 46.6, 52.8, 60.2]
     utilization = [22.1, 33.0, 41.5, 56.8]
     colors_sr = ['#78909C', '#FF9800', '#AB47BC', '#E53935']
@@ -274,7 +274,7 @@ def graph8_fleet_utilization_timeline():
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.plot(hours, dynamic_smooth * 100, '-', color='#E53935', linewidth=2, label='Proposed Dynamic FL (μ=56.8%)')
     ax.fill_between(hours, dynamic_smooth * 100, alpha=0.1, color='#E53935')
-    ax.plot(hours, static_smooth * 100, '--', color='#1E88E5', linewidth=2, label='Static Nearest-First (μ=33.0%)')
+    ax.plot(hours, static_smooth * 100, '--', color='#1E88E5', linewidth=2, label='NSGA-TS [2]-First (μ=33.0%)')
     ax.fill_between(hours, static_smooth * 100, alpha=0.1, color='#1E88E5')
     ax.plot(hours, random_smooth * 100, ':', color='#78909C', linewidth=2, label='Random Dispatch (μ=22.1%)')
     ax.set_xlabel('Hour of Day')
@@ -418,7 +418,7 @@ def graph11_demand_heatmap():
 # GRAPH 12: Convergence Speed vs Communication Efficiency Trade-off
 # ============================================================
 def graph12_tradeoff_analysis():
-    methods = ['Centralized\nLSTM', 'FedSGD', 'FedAvg\n(Full)', 'FedProx', 'QSGD\n(2-bit)', 'Random\nSparse', 'Proposed\nFL-LSTM']
+    methods = ['Centralized\nLSTM', 'FedSGD', 'FedAvg\n(Full)', 'GC-FL [4]\n(IoTJ 2025)', 'GC-FL\n(2-bit)', 'Random\nSparse', 'Proposed\nFL-LSTM']
     convergence_rounds = [1, 35, 18, 20, 22, 25, 20]
     comm_cost_mb = [106.0, 185.5, 106.0, 106.0, 13.3, 31.8, 16.0]
     mae = [6.53, 15.2, 7.28, 7.61, 8.45, 9.12, 7.05]
